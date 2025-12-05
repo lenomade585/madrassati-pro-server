@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إرسال الإشعارات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; padding: 20px; font-family: 'Cairo', sans-serif; text-align: right; }
+        .container { max-width: 600px; margin-top: 20px; }
+        .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: none; padding: 25px; }
+        
+        .btn-back {
+            background-color: #6c757d; color: white; text-decoration: none;
+            padding: 8px 15px; border-radius: 8px; font-size: 0.9em;
+            display: inline-block; margin-bottom: 15px;
+        }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+
+        h3 { color: #0d6efd; font-weight: 700; margin-bottom: 20px; }
+        label { font-weight: 600; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card shadow">
+            <h3 class="text-center">🔔 إرسال إشعار عام</h3>
+            
+            <label class="form-label">نوع الإشعار</label>
+            <select class="form-select mb-3" id="notifType" onchange="checkTarget()">
+                <option value="Fete ecole">🎉 حفلة المدرسة</option>
+                <option value="Reunion association">🤝 اجتماع الجمعية</option>
+                <option value="Campagne vaccin">💉 حملة تلقيح</option>
+                <option value="Excursion">🚌 رحلة مدرسية</option>
+                <option value="Rendez-vous perso">📅 موعد شخصي (لولي محدد)</option>
+            </select>
+
+            <label class="form-label">المرسل إليه</label>
+            <select class="form-select mb-3" id="targetSelect">
+                </select>
+
+            <label class="form-label">عنوان الرسالة</label>
+            <input type="text" class="form-control mb-2" id="title" placeholder="عنوان مختصر">
+            
+            <label class="form-label">نص الرسالة</label>
+            <textarea class="form-control mb-3" id="message" rows="3" placeholder="اكتب تفاصيل الإشعار هنا..."></textarea>
+
+            <button onclick="sendNotif()" class="btn btn-primary w-100 py-2 fw-bold">🚀 إرسال الإشعار</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+        
+        let allStudents = [];
+
+        window.onload = async function() {
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL pour charger les élèves
+                const res = await fetch(`${API_BASE_URL}/api/students`);
+                allStudents = await res.json();
+                checkTarget();
+            } catch (error) {
+                console.error("Erreur chargement élèves:", error);
+                const select = document.getElementById('targetSelect');
+                select.innerHTML = '<option disabled>❌ خطأ في تحميل قائمة التلاميذ</option>';
+            }
+        };
+
+        function checkTarget() {
+            const type = document.getElementById('notifType').value;
+            const select = document.getElementById('targetSelect');
+            select.innerHTML = '';
+
+            if (type === 'Rendez-vous perso') {
+                select.innerHTML = '<option selected disabled>-- اختر التلميذ --</option>';
+                if (allStudents.length > 0) {
+                    allStudents.forEach(s => select.innerHTML += `<option value="${s.code}">${s.name} (${s.code})</option>`);
+                } else {
+                    select.innerHTML = '<option disabled>لا يوجد تلاميذ</option>';
+                }
+            } else {
+                select.innerHTML = '<option value="ALL">📢 للجميع (Tout le monde)</option>';
+            }
+        }
+
+        async function sendNotif() {
+            const type = document.getElementById('notifType').value;
+            const target = document.getElementById('targetSelect').value;
+            const title = document.getElementById('title').value;
+            const message = document.getElementById('message').value;
+
+            if (!title || !message) return alert("الرجاء كتابة العنوان والرسالة");
+            if (target.includes('اختر') || target.includes('لا يوجد')) return alert("الرجاء اختيار المرسل إليه ou vérifier la connexion.");
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL pour l'envoi de la notification
+                const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, title, message, target_id: target })
+                });
+
+                if (response.ok) {
+                    alert("✅ تم الإرسال بنجاح !");
+                    document.getElementById('title').value = '';
+                    document.getElementById('message').value = '';
+                } else {
+                    alert("❌ خطأ في السيرفر");
+                }
+            } catch (error) {
+                alert("❌ خطأ في الاتصال");
+            }
+        }
+    </script>
+</body>
+</html>

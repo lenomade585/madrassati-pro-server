@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تفعيل الحسابات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding: 20px; 
+            font-family: 'Cairo', sans-serif; 
+            text-align: right;
+        }
+        .container { max-width: 950px; margin-top: 20px; }
+        .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: none; padding: 25px; }
+        .btn-back { background-color: #6c757d; color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; margin-bottom: 15px; display: inline-block; }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+        
+        h3 { color: #e67e22; font-weight: 700; margin-bottom: 20px; }
+        
+        /* Status Badges */
+        .badge-pending { background-color: #ffc107; color: #333; }
+        .badge-approved { background-color: #28a745; color: white; }
+        .badge-rejected { background-color: #dc3545; color: white; }
+        
+        .table td { vertical-align: middle; }
+        .reason-text { font-size: 0.85em; color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card">
+            <h3 class="text-center">📱 طلبات تفعيل الهواتف</h3>
+            <p class="text-center text-muted">إدارة طلبات الأولياء (Approbation & Refus)</p>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>التلميذ</th>
+                            <th>رقم التسجيل</th>
+                            <th>تاريخ الطلب</th>
+                            <th>الحالة</th>
+                            <th>الإجراء (Actions)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestsTable">
+                        <tr><td colspan="5" class="text-center">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+        
+        window.onload = loadRequests;
+
+        async function loadRequests() {
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/admin/requests`);
+                const requests = await res.json();
+                
+                const tbody = document.getElementById('requestsTable');
+                tbody.innerHTML = '';
+
+                if (requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">لا توجد طلبات جديدة</td></tr>';
+                    return;
+                }
+
+                requests.forEach(r => {
+                    let statusBadge = '';
+                    let actionBtns = '';
+
+                    // 1. En Attente
+                    if (r.status === 'PENDING') {
+                        statusBadge = '<span class="badge badge-pending">⏳ في الانتظار</span>';
+                        actionBtns = `
+                            <button onclick="approve(${r.student_id})" class="btn btn-success btn-sm fw-bold">✅ قبول</button>
+                            <button onclick="reject(${r.student_id})" class="btn btn-danger btn-sm fw-bold">❌ رفض</button>
+                        `;
+                    } 
+                    // 2. Approuvé
+                    else if (r.status === 'APPROVED') {
+                        statusBadge = '<span class="badge badge-approved">✅ مفعل</span>';
+                        actionBtns = `<button onclick="resetDevice(${r.student_id})" class="btn btn-outline-secondary btn-sm">🗑️ حذف (Reset)</button>`;
+                    } 
+                    // 3. Rejeté
+                    else if (r.status === 'REJECTED') {
+                        statusBadge = `<span class="badge badge-rejected">⛔ مرفوض</span><br><span class="reason-text">${r.message || ''}</span>`;
+                        actionBtns = `
+                            <button onclick="approve(${r.student_id})" class="btn btn-outline-success btn-sm">إعادة تفعيل</button>
+                            <button onclick="resetDevice(${r.student_id})" class="btn btn-outline-secondary btn-sm">🗑️ حذف</button>
+                        `;
+                    }
+
+                    let dateStr = new Date(r.request_date).toLocaleDateString('fr-FR');
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${r.name}</td>
+                            <td>${r.code}</td>
+                            <td>${dateStr}</td>
+                            <td>${statusBadge}</td>
+                            <td>${actionBtns}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { 
+                console.error("Erreur de chargement des requêtes:", error); 
+                document.getElementById('requestsTable').innerHTML = '<tr><td colspan="5" class="text-center p-4" style="color:red;">❌ Erreur de connexion au serveur API.</td></tr>';
+            }
+        }
+
+        // --- ACTION : APPROUVER ---
+        async function approve(id) {
+            if(!confirm("تأكيد تفعيل الحساب؟")) return;
+            // CORRIGÉ : Utilisation de API_BASE_URL
+            await fetch(`${API_BASE_URL}/api/admin/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: id })
+            });
+            loadRequests();
+        }
+
+        // --- ACTION : REFUSER (AVEC MOTIF) ---
+        async function reject(id) {
+            const reason = prompt("🔴 لماذا تريد رفض الطلب؟ (اكتب السبب هنا)");
+            
+            if (reason) {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                await fetch(`${API_BASE_URL}/api/admin/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: id, reason: reason })
+                });
+                alert("تم رفض الطلب بنجاح.");
+                loadRequests();
+            }
+        }
+
+        // --- ACTION : RESET ---
+        async function resetDevice(id) {
+            if(!confirm("حذف الهاتف؟ سيتمكن الولي من التسجيل مجدداً.")) return;
+            // CORRIGÉ : Utilisation de API_BASE_URL
+            await fetch(`${API_BASE_URL}/api/admin/reset`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: id })
+            });
+            loadRequests();
+        }
+    </script>
+</body>
+</html>

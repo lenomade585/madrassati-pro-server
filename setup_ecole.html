@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Super Admin - Création Écoles</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 8px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        .list { margin-top: 30px; }
+        .school-item { background: #e9ecef; padding: 10px; margin-bottom: 5px; border-left: 5px solid #007bff; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🏫 Ajouter une Nouvelle École</h2>
+    <input type="text" id="nom" placeholder="Nom de l'école (ex: École El-Amel)">
+    <input type="text" id="ville" placeholder="Ville (ex: Alger)">
+    <input type="text" id="password" placeholder="Mot de passe Admin (ex: 1234)">
+    <button onclick="creerEcole()">Enregistrer l'École</button>
+
+    <div class="list">
+        <h3>Liste des Écoles existantes :</h3>
+        <div id="listeEcoles">Chargement...</div>
+    </div>
+</div>
+
+<script>
+    // --- CORRECTION MAJEURE : URL DE L'API ---
+    // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+    const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+    // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+    // const API_BASE_URL = "http://localhost:3000"; 
+    // ----------------------------------------------------------------------------------
+
+    // 1. Fonction pour CRÉER une école
+    async function creerEcole() {
+        const nom = document.getElementById('nom').value;
+        const ville = document.getElementById('ville').value;
+        const password = document.getElementById('password').value;
+
+        if(!nom || !ville) return alert("Remplissez tout !");
+
+        try {
+            // CORRIGÉ : Utilisation de API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/create-school`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nom, city: ville, password: password })
+            });
+    
+            const data = await response.json();
+            alert(data.message);
+            chargerEcoles(); // On rafraîchit la liste
+
+        } catch (error) {
+            console.error("Erreur création école:", error);
+            alert("Erreur de connexion au serveur API.");
+        }
+    }
+
+    // 2. Fonction pour VOIR les écoles
+    async function chargerEcoles() {
+        const divListe = document.getElementById('listeEcoles');
+        divListe.innerHTML = 'Chargement...';
+
+        try {
+            // CORRIGÉ : Utilisation de API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/schools`);
+            const data = await response.json();
+            
+            divListe.innerHTML = '';
+
+            // NOTE : Il faut s'assurer que la route /api/schools dans server.js 
+            // renvoie un objet JSON avec une propriété 'schools' qui est un tableau.
+            const schools = data.schools || data; 
+
+            if (schools.length === 0) {
+                 divListe.innerHTML = 'Aucune école enregistrée.';
+                 return;
+            }
+
+            schools.forEach(ecole => {
+                divListe.innerHTML += `
+                    <div class="school-item">
+                        <strong>ID ${ecole.id} : ${ecole.name}</strong><br>
+                        📍 ${ecole.city} 
+                        (Admin Pass: ${ecole.admin_password || 'Non affiché'})
+                    </div>
+                `;
+            });
+        } catch (error) {
+             console.error("Erreur chargement écoles:", error);
+             divListe.innerHTML = '❌ Erreur de connexion au serveur API.';
+        }
+    }
+
+    // Charger la liste au démarrage
+    chargerEcoles();
+</script>
+
+</body>
+</html>

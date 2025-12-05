@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>قائمة التلاميذ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding: 20px; 
+            font-family: 'Cairo', sans-serif; 
+            text-align: right;
+        }
+        .container { max-width: 800px; margin-top: 20px; }
+        
+        .card { 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+            border: none; 
+            padding: 25px; 
+            margin-bottom: 20px;
+        }
+        
+        /* Bouton Retour */
+        .btn-back {
+            background-color: #6c757d; color: white; text-decoration: none;
+            padding: 8px 15px; border-radius: 8px; font-size: 0.9em;
+            display: inline-block; margin-bottom: 15px;
+        }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+
+        h3 { color: #007bff; font-weight: 700; margin-bottom: 20px; }
+        
+        /* Zone d'import Excel */
+        .import-box {
+            background-color: #e3f2fd;
+            border: 2px dashed #90caf9;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        /* Table des élèves */
+        .table-custom {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table-custom thead {
+            background-color: #007bff;
+            color: white;
+        }
+        .table-custom th, .table-custom td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .code-badge {
+            background-color: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card">
+            <h3>📂 استيراد قائمة التلاميذ (Excel)</h3>
+            <p class="text-muted mb-3">يجب أن يحتوي ملف Excel على عمود باسم "Nom" (الاسم واللقب)</p>
+            
+            <div class="import-box">
+                <input type="file" id="excelFile" class="form-control mb-3" accept=".xlsx, .xls">
+                <button onclick="uploadFile()" class="btn btn-primary fw-bold">📤 رفع الملف وإضافة التلاميذ</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="m-0">👨‍🎓 قائمة التلاميذ المسجلين</h3>
+                <span class="badge bg-secondary fs-6" id="studentCount">0 تلميذ</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الاسم واللقب (Nom Prénom)</th>
+                            <th>رقم التسجيل (Matricule)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTable">
+                        <tr><td colspan="3" class="text-center">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+
+        // --- 1. CHARGEMENT DE LA LISTE ---
+        window.onload = loadStudents;
+
+        async function loadStudents() {
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/students`);
+                const students = await res.json();
+                
+                const tbody = document.getElementById('studentsTable');
+                document.getElementById('studentCount').innerText = students.length + " تلميذ";
+                tbody.innerHTML = '';
+
+                if (students.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4">لا يوجد تلاميذ مسجلين حالياً</td></tr>';
+                    return;
+                }
+
+                students.forEach((s, index) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td class="fw-bold text-primary">${s.name}</td>
+                            <td><span class="code-badge">${s.code}</span></td>
+                        </tr>
+                    `;
+                });
+
+            } catch (error) {
+                console.error("Erreur:", error);
+                document.getElementById('studentsTable').innerHTML = '<tr><td colspan="3" class="text-center text-danger">❌ خطأ في الاتصال بالخادم</td></tr>';
+            }
+        }
+
+        // --- 2. FONCTION D'IMPORT EXCEL ---
+        async function uploadFile() {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+
+            if (!file) return alert("⚠️ الرجاء اختيار ملف Excel أولاً !");
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // On affiche un petit message d'attente
+                const btn = document.querySelector('button[onclick="uploadFile()"]');
+                const originalText = btn.innerText;
+                btn.innerText = "⏳ جاري الرفع...";
+                btn.disabled = true;
+
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert("✅ " + result.message);
+                    fileInput.value = ''; // Vider l'input
+                    loadStudents(); // Recharger la liste immédiatement
+                } else {
+                    alert("❌ خطأ: " + result.message);
+                }
+
+                // On remet le bouton normal
+                btn.innerText = originalText;
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error("Erreur upload:", error);
+                alert("❌ خطأ في الاتصال بالسيرفر");
+            }
+        }
+    </script>
+</body>
+</html>

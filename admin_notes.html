@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Notes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .container { max-width: 700px; margin-top: 40px; margin-bottom: 40px; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 30px; background: white; }
+        h2, h4 { color: #333; font-weight: bold; text-align: center; margin-bottom: 25px; }
+        .btn-save { background-color: #0d6efd; color: white; padding: 10px; font-size: 18px; }
+        .table-custom { margin-top: 20px; }
+        .badge-code { background-color: #ffc107; color: #333; font-weight: bold; }
+        
+        /* Bouton Retour (ajouté pour la navigation) */
+        .btn-back {
+            background-color: #6c757d; color: white; text-decoration: none;
+            padding: 8px 15px; border-radius: 8px; font-size: 0.9em;
+            display: inline-block; margin-bottom: 15px;
+        }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card mb-4">
+            <h2>📊 إدخال نقاط التلاميذ</h2>
+
+            <div class="mb-3">
+                <label class="form-label">اختر التلميذ (Choisir l'élève)</label>
+                <select class="form-select" id="studentSelect">
+                    <option selected disabled>Chargement...</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">المادة (Matière)</label>
+                <select class="form-select" id="subject">
+                    <option value="الرياضيات">📐 الرياضيات (Maths)</option>
+                    <option value="اللغة العربية">📖 اللغة العربية (Arabe)</option>
+                    <option value="الفيزياء">⚡ الفيزياء (Physique)</option>
+                    <option value="العلوم الطبيعية">🌿 العلوم الطبيعية (Sciences)</option>
+                    <option value="الفرنسية">🇫🇷 الفرنسية (Français)</option>
+                    <option value="الإنجليزية">🇬🇧 الإنجليزية (Anglais)</option>
+                    <option value="التاريخ والجغرافيا">🌍 التاريخ والجغرافيا (Histoire-Géo)</option>
+                    <option value="التربية الإسلامية">🕌 التربية الإسلامية (Islamique)</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">العلامة (Note /20)</label>
+                <input type="number" class="form-control" id="score" step="0.5" min="0" max="20" placeholder="Ex: 14.5">
+            </div>
+
+            <button onclick="saveGrade()" class="btn btn-save w-100">💾 حفظ العلامة</button>
+            <div id="message" class="mt-3 text-center"></div>
+        </div>
+
+        <div class="card">
+            <h4>📋 آخر النقاط المضافة (Dernières notes)</h4>
+            <table class="table table-hover table-custom text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>التلميذ (Élève)</th>
+                        <th>المادة (Matière)</th>
+                        <th>العلامة (Note)</th>
+                    </tr>
+                </thead>
+                <tbody id="gradesTable">
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+
+
+        // Charger Élèves + Notes au démarrage
+        window.onload = function() {
+            loadStudents();
+            loadGrades();
+        };
+
+        // 1. Charger la liste déroulante des élèves
+        async function loadStudents() {
+            const select = document.getElementById('studentSelect');
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const response = await fetch(`${API_BASE_URL}/api/students`);
+                const students = await response.json();
+                select.innerHTML = '<option selected disabled>-- اختر التلميذ --</option>';
+                students.forEach(st => {
+                    const option = document.createElement('option');
+                    option.value = st.code;
+                    option.textContent = `${st.name} (${st.code})`;
+                    select.appendChild(option);
+                });
+            } catch (e) { 
+                console.error("Erreur chargement élèves:", e); 
+                select.innerHTML = '<option disabled>❌ Erreur connexion serveur</option>';
+            }
+        }
+
+        // 2. Charger le tableau des notes (NOUVEAU)
+        async function loadGrades() {
+            const tbody = document.getElementById('gradesTable');
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                // NOTE: La route /api/grades doit être adaptée sur le serveur pour inclure les noms des élèves
+                // (jointure sur la table 'students' nécessaire dans server.js pour le nom).
+                const response = await fetch(`${API_BASE_URL}/api/grades`);
+                const grades = await response.json();
+                
+                tbody.innerHTML = ""; // Vider avant de remplir
+
+                if (grades.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="3">لا توجد نقاط مسجلة حاليًا.</td></tr>';
+                     return;
+                }
+                
+                grades.forEach(g => {
+                    // Supposons que le serveur renvoie g.name et g.student_id (code)
+                    const displayName = g.name ? g.name : `<span class="badge bg-secondary">${g.student_id}</span>`;
+                    
+                    const row = `
+                        <tr>
+                            <td>
+                                <strong>${displayName}</strong><br>
+                                <small class="text-muted" style="font-size: 12px;">${g.student_id}</small>
+                            </td>
+                            <td>${g.subject}</td>
+                            <td><span class="badge bg-primary fs-6">${g.score} / 20</span></td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (e) { 
+                console.error("Erreur chargement notes:", e); 
+                 tbody.innerHTML = '<tr><td colspan="3" style="color:red;">Erreur de connexion au serveur API.</td></tr>';
+            }
+        }
+
+        // 3. Sauvegarder la note
+        async function saveGrade() {
+            const studentCode = document.getElementById('studentSelect').value;
+            const subject = document.getElementById('subject').value;
+            const score = document.getElementById('score').value;
+            const msgDiv = document.getElementById('message');
+
+            if (studentCode === "-- اختر التلميذ --" || !score) {
+                msgDiv.innerHTML = '<div class="alert alert-danger">Veuillez tout remplir</div>';
+                setTimeout(() => msgDiv.innerHTML = '', 3000);
+                return;
+            }
+            if (parseFloat(score) < 0 || parseFloat(score) > 20) {
+                 msgDiv.innerHTML = '<div class="alert alert-danger">Note doit être entre 0 et 20.</div>';
+                 setTimeout(() => msgDiv.innerHTML = '', 3000);
+                 return;
+            }
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const response = await fetch(`${API_BASE_URL}/api/grades`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: studentCode, subject, score: parseFloat(score) })
+                });
+
+                if (response.ok) {
+                    msgDiv.innerHTML = '<div class="alert alert-success">✅ Note ajoutée !</div>';
+                    document.getElementById('score').value = ''; 
+                    loadGrades(); // Recharger le tableau
+                    
+                    // Effacer le message après 3 secondes
+                    setTimeout(() => msgDiv.innerHTML = '', 3000);
+                } else {
+                     msgDiv.innerHTML = '<div class="alert alert-danger">❌ Erreur serveur lors de l\'enregistrement.</div>';
+                     setTimeout(() => msgDiv.innerHTML = '', 3000);
+                }
+            } catch (e) { 
+                console.error("Erreur sauvegarde:", e); 
+                 msgDiv.innerHTML = '<div class="alert alert-danger">❌ Erreur de connexion à l\'API.</div>';
+                 setTimeout(() => msgDiv.innerHTML = '', 3000);
+            }
+        }
+    </script>
+
+</body>
+</html>

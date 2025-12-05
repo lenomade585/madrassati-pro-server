@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فضاء الأولياء</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --danger: #dc3545;
+            --warning: #ffc107;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            color: var(--text-color);
+            text-align: right;
+        }
+
+        .app-container {
+            background-color: var(--card-bg);
+            max-width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            min-height: 90vh;
+            padding-bottom: 50px; /* Espace pour le bouton en bas */
+        }
+
+        /* LOGIN */
+        #login-screen { text-align: center; padding-top: 60px; }
+        .login-icon { font-size: 3.5em; margin-bottom: 15px; }
+        
+        input.code-input {
+            width: 100%; padding: 15px; font-size: 1.1em;
+            text-align: center; border: 2px solid #ddd;
+            border-radius: 12px; margin-bottom: 20px;
+            box-sizing: border-box; outline: none;
+            font-family: 'Cairo', sans-serif;
+        }
+        input.code-input:focus { border-color: var(--primary-color); }
+
+        /* DASHBOARD */
+        #dashboard { display: none; }
+
+        .student-info-box {
+            text-align: center;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,123,255,0.3);
+        }
+        h2.student-name { margin: 0; font-weight: 700; font-size: 1.5em; }
+        .student-code-display { opacity: 0.9; font-size: 0.9em; margin-top: 5px; }
+
+        .header-actions {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 15px; margin-top: 10px;
+        }
+        .section-title { font-size: 1.1em; font-weight: 700; color: #444; }
+
+        /* BOUTONS */
+        .btn {
+            padding: 12px; border: none; border-radius: 10px;
+            cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: 600;
+            font-size: 1em; width: 100%;
+        }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-refresh { background-color: #e9ecef; color: #495057; width: auto; padding: 6px 15px; font-size: 0.85em; }
+        
+        /* Bouton Sortir (Rouge) */
+        .btn-logout { 
+            background-color: #ffebee; 
+            color: var(--danger); 
+            border: 1px solid #ffcccc; 
+            margin-top: 40px; 
+            font-weight: bold;
+        }
+        
+        /* Bouton Demande Accès */
+        .btn-request {
+            background-color: #ffc107; 
+            color: #333; 
+            font-weight: bold;
+            margin-top: 15px; 
+            border: 1px solid #e0a800;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* CARTES */
+        .notif-card {
+            background-color: #f8fbff;
+            border: 1px solid #e1effe;
+            border-right: 5px solid var(--primary-color);
+            border-radius: 10px; padding: 15px; margin-bottom: 12px;
+        }
+        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .notif-tag { background-color: white; color: var(--primary-color); padding: 2px 10px; border-radius: 8px; font-size: 0.8em; font-weight: bold; border: 1px solid #cce5ff; }
+        .notif-date { font-size: 0.75em; color: #888; font-weight: 600; direction: ltr; }
+        .notif-title { font-weight: 700; font-size: 1.1em; margin-bottom: 5px; color: #222; }
+        .notif-msg { font-size: 0.95em; color: #555; line-height: 1.5; }
+
+        .grade-item {
+            background: white; border: 1px solid #eee;
+            border-radius: 10px; padding: 12px 15px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .grade-score { font-weight: 800; color: var(--primary-color); font-size: 1.1em; direction: ltr; }
+
+        .absence-item {
+            background-color: #fff5f5; border-right: 4px solid var(--danger);
+            padding: 12px; margin-bottom: 10px; border-radius: 6px; 
+        }
+
+        /* Messages Spéciaux (Verrouillé) */
+        .locked-message {
+            background-color: #fff3cd; 
+            color: #856404; 
+            border: 1px solid #ffeeba;
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            font-size: 0.95em;
+        }
+        .lock-icon { font-size: 2em; margin-bottom: 10px; display: block; }
+
+        .divider { border-top: 1px solid #eee; margin: 25px 0; }
+        .empty-state { text-align: center; color: #aaa; font-style: italic; padding: 10px; font-size: 0.9em;}
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="login-screen">
+            <div class="login-icon">👨‍👩‍👧‍👦</div>
+            <h2 style="color:var(--primary-color);">فضاء الأولياء</h2>
+            <p style="color:#666; margin-bottom: 30px;">تطبيق آمن - جهاز واحد لكل تلميذ</p>
+            
+            <input type="text" id="codeInput" class="code-input" placeholder="أدخل رقم التسجيل هنا">
+            <button onclick="login()" class="btn btn-primary">دخول ⬅️</button>
+            <p id="loginError" style="color:red; margin-top:15px; font-size:0.9em;"></p>
+        </div>
+
+        <div id="dashboard">
+            <div class="student-info-box">
+                <h2 class="student-name" id="studentName">--</h2>
+                <div class="student-code-display" id="studentCodeDisplay">--</div>
+            </div>
+
+            <div class="header-actions">
+                <button onclick="refreshData()" class="btn btn-refresh">تحديث ↻</button>
+                <div class="section-title">📢 الإشعارات</div>
+            </div>
+            <div id="notifications-list"></div>
+
+            <div class="divider"></div>
+
+            <div class="header-actions">
+                <div></div>
+                <div class="section-title">📄 كشف النقاط</div>
+            </div>
+            <div id="grades-list">
+                </div>
+
+            <div class="divider"></div>
+
+            <div class="header-actions">
+                <div></div>
+                <div class="section-title">⛔ الغيابات</div>
+            </div>
+            <div id="absences-list"></div>
+
+            <button onclick="logout()" class="btn btn-logout">تسجيل الخروج (Sortir)</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+
+        let currentStudentId = null;
+
+        // --- 1. ID UNIQUE (EMPREINTE) ---
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('device_id');
+            if (!deviceId) {
+                deviceId = 'DEVICE-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                localStorage.setItem('device_id', deviceId);
+            }
+            return deviceId;
+        }
+
+        window.onload = function() {
+            const savedId = localStorage.getItem('student_id');
+            const savedCode = localStorage.getItem('student_code');
+            const savedName = localStorage.getItem('student_name');
+
+            if(savedId && savedCode) {
+                if(savedName) document.getElementById('studentName').innerText = savedName;
+                fetchData(savedId);
+            }
+        };
+
+        // --- 2. CONNEXION ---
+        async function login() {
+            const code = document.getElementById('codeInput').value.trim();
+            if(!code) return;
+
+            const deviceId = getDeviceId();
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code: code, device_id: deviceId })
+                });
+                const data = await res.json();
+
+                if(data.success) {
+                    localStorage.setItem('student_id', data.student.id);
+                    localStorage.setItem('student_code', data.student.secret_code);
+                    localStorage.setItem('student_name', data.student.full_name);
+                    
+                    document.getElementById('studentName').innerText = data.student.full_name;
+                    fetchData(data.student.id);
+                } else {
+                    let errorMsg = data.message;
+                    // Si le message contient "rejeté", on affiche la raison
+                    if (data.status === 'REJECTED') {
+                        errorMsg = "⛔ تم رفض الطلب: " + (data.message || "سبب غير محدد");
+                    }
+                    document.getElementById('loginError').innerText = "❌ " + errorMsg;
+                }
+            } catch(e) {
+                document.getElementById('loginError').innerText = "❌ خطأ في الاتصال بالخادم";
+                console.error("Erreur login:", e);
+            }
+        }
+
+        // --- 3. RÉCUPÉRATION ET GESTION ---
+        async function fetchData(id) {
+            currentStudentId = id;
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/my-grades/${id}`);
+                const data = await res.json();
+
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+
+                const savedName = localStorage.getItem('student_name');
+                if(savedName) document.getElementById('studentName').innerText = savedName;
+                document.getElementById('studentCodeDisplay').innerText = "رقم التسجيل: " + localStorage.getItem('student_code');
+
+                renderNotifications(data.notifications);
+                renderAbsences(data.absences);
+
+                // --- GESTION DE L'AFFICHAGE DU CADENAS ---
+                const gradesContainer = document.getElementById('grades-list');
+                
+                if (data.locked) {
+                    // Si REJETÉ par le directeur
+                    if (data.rejected) {
+                        gradesContainer.innerHTML = `
+                            <div class="locked-message" style="background-color:#ffebee; color:#c62828; border-color:#ef9a9a;">
+                                <span class="lock-icon">⛔</span>
+                                <strong>تم رفض الطلب</strong><br>
+                                السبب: ${data.reject_reason || 'غير محدد'}<br>
+                                <small>يرجى الاتصال بالإدارة</small>
+                            </div>
+                        `;
+                    }
+                    else {
+                        // Sinon, Vérifier si déjà demandé
+                        const requestSent = localStorage.getItem('request_sent_' + id);
+
+                        if(requestSent) {
+                            // Déjà demandé -> Sablier
+                            gradesContainer.innerHTML = `
+                                <div class="locked-message">
+                                    <span class="lock-icon">⏳</span>
+                                    <strong>الطلب قيد المعالجة</strong><br>
+                                    تم إرسال طلبك إلى الإدارة.<br>
+                                    يرجى الانتظار حتى يتم التفعيل.
+                                </div>
+                            `;
+                        } else {
+                            // Pas encore demandé -> Bouton
+                            gradesContainer.innerHTML = `
+                                <div class="locked-message">
+                                    <span class="lock-icon">🔒</span>
+                                    <strong>المحتوى محجوب</strong><br>
+                                    لرؤية النقاط، يجب تفعيل الحساب من طرف الإدارة.<br>
+                                    <button onclick="requestAccess('${id}')" class="btn btn-request">
+                                        ✋ طلب تفعيل (Demander l'accès)
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                } else {
+                    // CAS 3 : Approuvé -> Afficher les notes
+                    renderGrades(data.grades);
+                }
+
+            } catch(e) {
+                console.error("Erreur fetchData:", e);
+                document.getElementById('grades-list').innerHTML = `
+                    <div class="locked-message" style="background-color:#ffebee; color:#c62828; border-color:#ef9a9a;">
+                        <span class="lock-icon">❌</span>
+                        <strong>خطأ في الاتصال</strong><br>
+                        Veuillez vérifier votre connexion Internet.
+                    </div>
+                `;
+            }
+        }
+
+        // --- ACTION BOUTON DEMANDE ---
+        function requestAccess(id) {
+            // NOTE: Le simple fait de tenter le login dans le cas 'PENDING'
+            // suffit à enregistrer le device ID sur le serveur (voir server.js login logic).
+            // Le localStorage ici est juste une surcouche pour éviter que le parent clique plusieurs fois.
+            localStorage.setItem('request_sent_' + id, 'true'); 
+            alert("✅ تم إرسال الطلب إلى المدير.");
+            refreshData(); 
+        }
+
+        // --- FONCTION DE DECONNEXION INTELLIGENTE ---
+        function logout() {
+            // On supprime SEULEMENT les infos de l'élève
+            localStorage.removeItem('student_id');
+            localStorage.removeItem('student_code');
+            localStorage.removeItem('student_name');
+            // IMPORTANT : On ne supprime PAS 'device_id' (la clé du téléphone)
+            // Comme ça, si le parent revient, il n'a pas besoin d'être re-validé.
+            
+            location.reload();
+        }
+
+        // --- AFFICHAGE ---
+        function renderNotifications(notifs) {
+            const container = document.getElementById('notifications-list');
+            container.innerHTML = '';
+            if(!notifs || notifs.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد إشعارات جديدة</div>';
+                return;
+            }
+            notifs.forEach(n => {
+                let dateStr = n.timestamp;
+                try {
+                    const dateObj = new Date(n.timestamp);
+                    // Format français jour/mois/année heure:minute
+                    dateStr = dateObj.toLocaleDateString('fr-FR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    }).replace(' ', ' - '); 
+                } catch(e) { }
+
+                container.innerHTML += `
+                <div class="notif-card">
+                    <div class="notif-header">
+                        <span class="notif-tag">${n.type}</span>
+                        <span class="notif-date">${dateStr}</span>
+                    </div>
+                    <div class="notif-title">${n.title}</div>
+                    <div class="notif-msg">${n.message}</div>
+                </div>`;
+            });
+        }
+
+        function renderGrades(grades) {
+            const container = document.getElementById('grades-list');
+            container.innerHTML = '';
+            if(!grades || grades.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد نقاط مسجلة</div>';
+                return;
+            }
+            grades.forEach(g => {
+                container.innerHTML += `
+                <div class="grade-item">
+                    <span style="font-weight:600;">${g.subject}</span>
+                    <span class="grade-score">${g.score}/20</span>
+                </div>`;
+            });
+        }
+
+        function renderAbsences(absences) {
+            const container = document.getElementById('absences-list');
+            container.innerHTML = '';
+            if(!absences || absences.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد غيابات ✅</div>';
+                return;
+            }
+            absences.forEach(a => {
+                container.innerHTML += `
+                <div class="absence-item">
+                    <strong>${a.date}</strong><br>
+                    <small>${a.reason}</small>
+                </div>`;
+            });
+        }
+
+        function refreshData() {
+            if(currentStudentId) fetchData(currentStudentId);
+        }
+    </script>
+</body>
+</html>

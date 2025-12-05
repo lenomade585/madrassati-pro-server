@@ -1,0 +1,14 @@
+# Dépendances Node (très volumineux)
+node_modules/
+
+# Base de données locale (ne doit pas être en production)
+*.db
+madrassati.db
+*.sqlite
+
+# Fichiers de log ou de build
+npm-debug.log*
+.DS_Store
+
+# Variables d'environnement locales (clés et secrets)
+.env

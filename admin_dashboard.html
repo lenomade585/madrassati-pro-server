@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة قيادة المدير</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --bg: #f4f6f9;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+            text-align: right;
+        }
+
+        /* En-tête */
+        .header-bar {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header-title h2 { margin: 0; font-weight: 700; color: #333; }
+        .header-title p { margin: 0; color: #777; font-size: 0.9em; }
+
+        /* Cartes Statistiques */
+        .stat-card {
+            background: white; border-radius: 15px; padding: 20px; border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.3s;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        
+        .stat-icon {
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5em; color: white;
+        }
+        .stat-info h3 { margin: 0; font-size: 1.8em; font-weight: bold; }
+        .stat-info p { margin: 0; color: #888; font-size: 0.9em; }
+
+        /* Boutons Actions */
+        .action-card {
+            background: white; border-radius: 15px; padding: 30px;
+            text-align: center; text-decoration: none; color: #444;
+            border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: 0.3s; display: block; position: relative;
+        }
+        .action-card:hover {
+            border-color: var(--primary); background-color: #f8fbff;
+            transform: translateY(-5px); color: var(--primary);
+        }
+
+        .action-icon { font-size: 3em; margin-bottom: 15px; display: block; }
+        .action-title { font-size: 1.2em; font-weight: 700; }
+        .action-desc { font-size: 0.85em; color: #888; margin-top: 5px; }
+
+        /* Badge de Notification Rouge */
+        .notif-badge {
+            background-color: var(--danger);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header-bar">
+            <div class="header-title">
+                <h2>🏫 لوحة قيادة المدير</h2>
+                <p>مرحباً بك في فضاء الإدارة</p>
+            </div>
+            <button onclick="location.reload()" class="btn btn-light btn-sm">تحديث ↻</button>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-info"><h3 id="countStudents">--</h3><p>عدد التلاميذ</p></div>
+                    <div class="stat-icon" style="background: var(--primary);">👨‍🎓</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-info"><h3 id="countPending">0</h3><p>طلبات معلقة</p></div>
+                    <div class="stat-icon" style="background: var(--warning);">⏳</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card">
+                    <div class="stat-info"><h3 id="countAbsences">--</h3><p>الغيابات</p></div>
+                    <div class="stat-icon" style="background: var(--danger);">⛔</div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mb-4 fw-bold text-secondary">⚙️ المهام الإدارية</h4>
+        
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <a href="admin_absences.html" class="action-card">
+                    <span class="action-icon">⛔</span>
+                    <div class="action-title">تسجيل الغيابات</div>
+                    <div class="action-desc">Signaler une absence</div>
+                </a>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <a href="admin_notifications.html" class="action-card">
+                    <span class="action-icon">🔔</span>
+                    <div class="action-title">إرسال إشعارات</div>
+                    <div class="action-desc">Envoyer des annonces</div>
+                </a>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <a href="admin_grades.html" class="action-card">
+                    <span class="action-icon">📝</span>
+                    <div class="action-title">إدخال النقاط</div>
+                    <div class="action-desc">Saisir les notes</div>
+                </a>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <a href="admin_students.html" class="action-card" style="border-color: #007bff;">
+                    <span class="action-icon">📂</span>
+                    <div class="action-title">قائمة التلاميذ</div>
+                    <div class="action-desc">Importer Excel & Voir la liste</div>
+                </a>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <a href="admin_requests.html" id="btnRequests" class="action-card" style="border-color: #ffc107;">
+                    <span class="action-icon">📱</span>
+                    <div class="action-title" id="titleRequests">طلبات التفعيل</div>
+                    <div class="action-desc">Valider les téléphones des parents</div>
+                </a>
+            </div>
+
+             <div class="col-12 mb-4">
+                <a href="#" onclick="alert('Déconnexion...')" class="action-card" style="background-color: #ffebee;">
+                    <span class="action-icon">🔒</span>
+                    <div class="action-title">تسجيل الخروج</div>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, décommentez la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+
+        // --- SCRIPT INTELLIGENT DE NOTIFICATION ---
+        window.onload = async function() {
+            try {
+                // 1. Charger nombre d'élèves
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const resStudents = await fetch(`${API_BASE_URL}/api/students`);
+                const students = await resStudents.json();
+                document.getElementById('countStudents').innerText = students.length || 0;
+
+                // 2. Charger les demandes en attente (NOTIFICATIONS)
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const resReq = await fetch(`${API_BASE_URL}/api/admin/requests`);
+                const requests = await resReq.json();
+                
+                // On compte seulement celles qui sont 'PENDING'
+                const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+                document.getElementById('countPending').innerText = pendingCount;
+
+                // 3. SI IL Y A DES DEMANDES -> ON AFFICHE L'ALERTE SUR LE BOUTON
+                if (pendingCount > 0) {
+                    const btn = document.getElementById('btnRequests');
+                    const title = document.getElementById('titleRequests');
+                    
+                    // Changer la bordure en ROUGE
+                    btn.style.borderColor = "#dc3545";
+                    btn.style.borderWidth = "2px";
+                    btn.style.backgroundColor = "#fff5f5";
+
+                    // Ajouter le badge rouge avec le chiffre
+                    title.innerHTML = `طلبات التفعيل <span class="notif-badge">${pendingCount}</span>`;
+                }
+
+                // 4. Stats fictives Absences
+                // (Note : Pour avoir les stats réelles, il faudra ajouter une route dans server.js 
+                // pour compter les absences totales dans la DB PostgreSQL)
+                document.getElementById('countAbsences').innerText = "--"; 
+
+            } catch (e) { 
+                console.error("Erreur stats", e);
+                document.getElementById('countStudents').innerText = "❌";
+                document.getElementById('countPending').innerText = "❌";
+                document.getElementById('countAbsences').innerText = "❌";
+                alert("Erreur de connexion au serveur API. Vérifiez l'URL de l'API.");
+            }
+        };
+    </script>
+</body>
+</html>

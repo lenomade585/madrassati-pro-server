@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل الغيابات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding: 20px; 
+            font-family: 'Cairo', sans-serif; 
+            text-align: right;
+        }
+        .container { max-width: 600px; margin-top: 20px; }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: none;
+            padding: 25px;
+        }
+        
+        /* Bouton Retour */
+        .btn-back {
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+
+        .btn-submit {
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            width: 100%;
+            font-size: 1.1em;
+            transition: 0.3s;
+        }
+        .btn-submit:hover { background-color: #bb2d3b; }
+        
+        label { font-weight: 600; margin-bottom: 5px; color: #555; }
+        .status-indicator { font-size: 0.9em; color: #888; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card">
+            <h3 class="text-center" style="color:#dc3545;">⛔ الإبلاغ عن غياب</h3>
+            <p class="text-center text-muted">إشعار فوري للولي</p>
+            
+            <div id="connectionStatus" class="status-indicator">⏳ جاري الاتصال...</div>
+
+            <label>التلميذ</label>
+            <select class="form-select mb-3" id="studentSelect">
+                <option selected disabled>...جاري التحميل</option>
+            </select>
+
+            <label>التاريخ</label>
+            <input type="date" class="form-control mb-3" id="dateInput">
+
+            <label>نوع التنبيه</label>
+            <select class="form-select mb-4" id="reasonInput">
+                <option value="غياب غير مبرر" selected>🔴 غياب غير مبرر</option>
+                <option value="تأخر">🟡 تأخر</option>
+                <option value="طرد من القسم">⚫ طرد من القسم</option>
+                <option value="استدعاء ولي الأمر">⚠️ استدعاء ولي الأمر</option>
+            </select>
+
+            <button onclick="submitAbsence()" class="btn btn-submit">📢 إرسال التنبيه</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+
+        window.onload = async function() {
+            const select = document.getElementById('studentSelect');
+            const status = document.getElementById('connectionStatus');
+            document.getElementById('dateInput').valueAsDate = new Date();
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/students`); 
+                if (!res.ok) throw new Error("Erreur serveur");
+                const students = await res.json();
+
+                status.innerHTML = '✅ متصل';
+                status.style.color = 'green';
+                
+                select.innerHTML = '<option selected disabled>-- اختر التلميذ --</option>';
+
+                if (students.length > 0) {
+                    students.forEach(s => {
+                        // Utilisation du code de l'élève pour la DB
+                        select.innerHTML += `<option value="${s.code}">${s.name} (${s.code})</option>`;
+                    });
+                } else {
+                    select.innerHTML = '<option disabled>لا يوجد تلاميذ</option>';
+                }
+
+            } catch (error) {
+                console.error("Erreur:", error);
+                status.innerHTML = '❌ الخادم غير متصل';
+                status.style.color = 'red';
+                select.innerHTML = '<option disabled>⚠️ خطأ في الاتصال</option>';
+            }
+        };
+
+        async function submitAbsence() {
+            const studentCode = document.getElementById('studentSelect').value;
+            const date = document.getElementById('dateInput').value;
+            const reason = document.getElementById('reasonInput').value;
+
+            if (!studentCode || studentCode.includes('اختر') || studentCode.includes('خطأ')) {
+                return alert("⚠️ يجب اختيار التلميذ أولاً");
+            }
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const response = await fetch(`${API_BASE_URL}/api/absences`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        student_id: studentCode, 
+                        date: date, 
+                        reason: reason 
+                    })
+                });
+
+                if (response.ok) {
+                    alert("✅ تم إرسال الإشعار بنجاح !");
+                } else {
+                    alert("❌ خطأ في السيرفر");
+                }
+            } catch (error) {
+                alert("❌ فشل الاتصال");
+            }
+        }
+    </script>
+</body>
+</html>

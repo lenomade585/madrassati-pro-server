@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدخال النقاط</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding: 20px; 
+            font-family: 'Cairo', sans-serif; 
+            text-align: right;
+        }
+        .container { max-width: 600px; margin-top: 20px; }
+        .card { 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            border: none; 
+            padding: 25px; 
+        }
+        
+        .btn-back {
+            background-color: #6c757d; color: white; text-decoration: none;
+            padding: 8px 15px; border-radius: 8px; font-size: 0.9em;
+            display: inline-block; margin-bottom: 15px;
+        }
+        .btn-back:hover { background-color: #5a6268; color: white; }
+
+        h3 { color: #28a745; font-weight: 700; margin-bottom: 20px; } /* Vert pour les notes */
+        label { font-weight: 600; color: #555; margin-bottom: 5px; }
+        
+        .form-select, .form-control {
+            padding: 12px; border-radius: 10px; margin-bottom: 20px;
+        }
+
+        .btn-submit {
+            background-color: #28a745; color: white; font-weight: bold;
+            padding: 15px; border-radius: 10px; border: none; width: 100%;
+            font-size: 1.1em; transition: 0.3s;
+        }
+        .btn-submit:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="admin_dashboard.html" class="btn-back">🏠 عودة للرئيسية (Retour)</a>
+
+        <div class="card shadow">
+            <h3 class="text-center">📝 إدخال كشف النقاط</h3>
+            <p class="text-center text-muted">إضافة علامة جديدة للتلميذ</p>
+
+            <label>التلميذ (Élève)</label>
+            <select class="form-select" id="studentSelect">
+                <option selected disabled>...جاري التحميل</option>
+            </select>
+
+            <label>المادة (Matière)</label>
+            <select class="form-select" id="subjectInput">
+                <option value="الرياضيات">📐 الرياضيات (Maths)</option>
+                <option value="اللغة العربية">📖 اللغة العربية (Arabe)</option>
+                <option value="الفيزياء">⚡ الفيزياء (Physique)</option>
+                <option value="العلوم الطبيعية">🌿 العلوم الطبيعية (Sciences)</option>
+                <option value="الفرنسية">🇫🇷 الفرنسية (Français)</option>
+                <option value="الإنجليزية">🇬🇧 الإنجليزية (Anglais)</option>
+                <option value="التاريخ والجغرافيا">🌍 التاريخ والجغرافيا (Histoire-Géo)</option>
+                <option value="التربية الإسلامية">🕌 التربية الإسلامية (Islamique)</option>
+            </select>
+
+            <label>العلامة (Note /20)</label>
+            <input type="number" class="form-control" id="scoreInput" placeholder="مثال: 15.5" step="0.5" min="0" max="20">
+
+            <button onclick="submitGrade()" class="btn btn-submit">💾 حفظ العلامة (Enregistrer)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CORRECTION MAJEURE : URL DE L'API ---
+        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        const API_BASE_URL = "https://VOTRE-URL-PUBLIQUE-DE-RENDER-ICI.com";
+        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
+        // const API_BASE_URL = "http://localhost:3000"; 
+        // ----------------------------------------------------------------------------------
+
+        // Chargement liste élèves
+        window.onload = async function() {
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const res = await fetch(`${API_BASE_URL}/api/students`);
+                const students = await res.json();
+                const select = document.getElementById('studentSelect');
+                
+                select.innerHTML = '<option selected disabled>-- اختر التلميذ --</option>';
+                if (students.length > 0) {
+                    students.forEach(s => {
+                        // On stocke le code de l'élève (s.code) comme valeur pour le back-end
+                        select.innerHTML += `<option value="${s.code}">${s.name} (${s.code})</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error("Erreur:", error);
+                alert("Erreur connexion serveur lors du chargement des élèves.");
+            }
+        };
+
+        // Envoi de la note
+        async function submitGrade() {
+            const studentCode = document.getElementById('studentSelect').value;
+            const subject = document.getElementById('subjectInput').value;
+            const score = document.getElementById('scoreInput').value;
+
+            if (!studentCode || studentCode.includes('اختر')) return alert("⚠️ اختر التلميذ أولاً");
+            if (!score) return alert("⚠️ أدخل العلامة");
+            if (score < 0 || score > 20) return alert("⚠️ العلامة يجب أن تكون بين 0 و 20");
+
+            try {
+                // CORRIGÉ : Utilisation de API_BASE_URL
+                const response = await fetch(`${API_BASE_URL}/api/grades`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        student_id: studentCode, 
+                        subject: subject, 
+                        score: parseFloat(score) // S'assurer que le score est un nombre
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`✅ تم حفظ علامة ${subject} بنجاح !`);
+                    document.getElementById('scoreInput').value = ''; // Vider juste la note pour enchainer
+                } else {
+                    alert("❌ Erreur serveur");
+                }
+            } catch (error) {
+                alert("❌ Erreur connexion");
+            }
+        }
+    </script>
+</body>
+</html>
