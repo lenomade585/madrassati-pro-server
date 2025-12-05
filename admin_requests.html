@@ -19,13 +19,22 @@
         
         h3 { color: #e67e22; font-weight: 700; margin-bottom: 20px; }
         
-        /* Status Badges */
         .badge-pending { background-color: #ffc107; color: #333; }
         .badge-approved { background-color: #28a745; color: white; }
         .badge-rejected { background-color: #dc3545; color: white; }
         
         .table td { vertical-align: middle; }
         .reason-text { font-size: 0.85em; color: #dc3545; font-weight: bold; }
+
+        /* --- STYLE DU MODAL (Fenêtre de refus) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: white; padding: 25px; border-radius: 10px; width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -35,8 +44,7 @@
 
         <div class="card">
             <h3 class="text-center">📱 طلبات تفعيل الهواتف</h3>
-            <p class="text-center text-muted">إدارة طلبات الأولياء (Approbation & Refus)</p>
-
+            
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
@@ -45,7 +53,7 @@
                             <th>رقم التسجيل</th>
                             <th>تاريخ الطلب</th>
                             <th>الحالة</th>
-                            <th>الإجراء (Actions)</th>
+                            <th>الإجراء</th>
                         </tr>
                     </thead>
                     <tbody id="requestsTable">
@@ -56,19 +64,27 @@
         </div>
     </div>
 
+    <div id="rejectModal" class="modal-overlay">
+        <div class="modal-box">
+            <h4>🔴 سبب الرفض</h4>
+            <p>لماذا تريد رفض هذا الطلب؟</p>
+            <input type="text" id="rejectReasonInput" class="form-control mb-3" placeholder="مثال: معلومات غير صحيحة">
+            <input type="hidden" id="rejectStudentId">
+            <div class="d-flex justify-content-between">
+                <button onclick="closeModal()" class="btn btn-secondary">إلغاء (Annuler)</button>
+                <button onclick="confirmReject()" class="btn btn-danger">تأكيد الرفض</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- CORRECTION MAJEURE : URL DE L'API ---
-        // 🛑 REMPLACEZ L'URL SUIVANTE PAR CELLE QUE RENDER VOUS DONNERA APRÈS DÉPLOIEMENT
+        // L'URL EST DÉJÀ CORRIGÉE ICI
         const API_BASE_URL = "https://madrassati-pro-server.onrender.com";
-        // Si vous travaillez en local avec le serveur Node.js, vous pouvez décommenter la ligne ci-dessous :
-        // const API_BASE_URL = "http://localhost:3000"; 
-        // ----------------------------------------------------------------------------------
         
         window.onload = loadRequests;
 
         async function loadRequests() {
             try {
-                // CORRIGÉ : Utilisation de API_BASE_URL
                 const res = await fetch(`${API_BASE_URL}/api/admin/requests`);
                 const requests = await res.json();
                 
@@ -81,53 +97,65 @@
                 }
 
                 requests.forEach(r => {
-                    let statusBadge = '';
-                    let actionBtns = '';
+                    let statusBadge = '', actionBtns = '';
 
-                    // 1. En Attente
                     if (r.status === 'PENDING') {
                         statusBadge = '<span class="badge badge-pending">⏳ في الانتظار</span>';
                         actionBtns = `
                             <button onclick="approve(${r.student_id})" class="btn btn-success btn-sm fw-bold">✅ قبول</button>
-                            <button onclick="reject(${r.student_id})" class="btn btn-danger btn-sm fw-bold">❌ رفض</button>
+                            <button onclick="openRejectModal(${r.student_id})" class="btn btn-danger btn-sm fw-bold">❌ رفض</button>
                         `;
-                    } 
-                    // 2. Approuvé
-                    else if (r.status === 'APPROVED') {
+                    } else if (r.status === 'APPROVED') {
                         statusBadge = '<span class="badge badge-approved">✅ مفعل</span>';
-                        actionBtns = `<button onclick="resetDevice(${r.student_id})" class="btn btn-outline-secondary btn-sm">🗑️ حذف (Reset)</button>`;
-                    } 
-                    // 3. Rejeté
-                    else if (r.status === 'REJECTED') {
+                        actionBtns = `<button onclick="resetDevice(${r.student_id})" class="btn btn-outline-secondary btn-sm">🗑️ Reset</button>`;
+                    } else if (r.status === 'REJECTED') {
                         statusBadge = `<span class="badge badge-rejected">⛔ مرفوض</span><br><span class="reason-text">${r.message || ''}</span>`;
-                        actionBtns = `
-                            <button onclick="approve(${r.student_id})" class="btn btn-outline-success btn-sm">إعادة تفعيل</button>
-                            <button onclick="resetDevice(${r.student_id})" class="btn btn-outline-secondary btn-sm">🗑️ حذف</button>
-                        `;
+                        actionBtns = `<button onclick="approve(${r.student_id})" class="btn btn-outline-success btn-sm">إعادة تفعيل</button>`;
                     }
-
-                    let dateStr = new Date(r.request_date).toLocaleDateString('fr-FR');
 
                     tbody.innerHTML += `
                         <tr>
                             <td class="fw-bold">${r.name}</td>
                             <td>${r.code}</td>
-                            <td>${dateStr}</td>
+                            <td>${new Date(r.request_date).toLocaleDateString('fr-FR')}</td>
                             <td>${statusBadge}</td>
                             <td>${actionBtns}</td>
                         </tr>
                     `;
                 });
-            } catch (error) { 
-                console.error("Erreur de chargement des requêtes:", error); 
-                document.getElementById('requestsTable').innerHTML = '<tr><td colspan="5" class="text-center p-4" style="color:red;">❌ Erreur de connexion au serveur API.</td></tr>';
-            }
+            } catch (error) { console.error("Erreur:", error); }
         }
 
-        // --- ACTION : APPROUVER ---
+        // --- GESTION DU MODAL (REMPLACE PROMPT) ---
+        function openRejectModal(id) {
+            document.getElementById('rejectStudentId').value = id;
+            document.getElementById('rejectReasonInput').value = ''; // Vider le champ
+            document.getElementById('rejectModal').style.display = 'flex'; // Afficher
+        }
+
+        function closeModal() {
+            document.getElementById('rejectModal').style.display = 'none';
+        }
+
+        async function confirmReject() {
+            const id = document.getElementById('rejectStudentId').value;
+            const reason = document.getElementById('rejectReasonInput').value;
+
+            if (!reason) return alert("الرجاء كتابة سبب الرفض");
+
+            try {
+                await fetch(`${API_BASE_URL}/api/admin/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: id, reason: reason })
+                });
+                closeModal();
+                loadRequests(); // Recharger la liste
+            } catch(e) { alert("Erreur connexion"); }
+        }
+
         async function approve(id) {
             if(!confirm("تأكيد تفعيل الحساب؟")) return;
-            // CORRIGÉ : Utilisation de API_BASE_URL
             await fetch(`${API_BASE_URL}/api/admin/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -136,26 +164,8 @@
             loadRequests();
         }
 
-        // --- ACTION : REFUSER (AVEC MOTIF) ---
-        async function reject(id) {
-            const reason = prompt("🔴 لماذا تريد رفض الطلب؟ (اكتب السبب هنا)");
-            
-            if (reason) {
-                // CORRIGÉ : Utilisation de API_BASE_URL
-                await fetch(`${API_BASE_URL}/api/admin/reject`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ student_id: id, reason: reason })
-                });
-                alert("تم رفض الطلب بنجاح.");
-                loadRequests();
-            }
-        }
-
-        // --- ACTION : RESET ---
         async function resetDevice(id) {
-            if(!confirm("حذف الهاتف؟ سيتمكن الولي من التسجيل مجدداً.")) return;
-            // CORRIGÉ : Utilisation de API_BASE_URL
+            if(!confirm("حذف الهاتف؟")) return;
             await fetch(`${API_BASE_URL}/api/admin/reset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
